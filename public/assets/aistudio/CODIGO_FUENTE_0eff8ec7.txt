@@ -1,0 +1,66 @@
+<!-- Botón Flotante de WhatsApp - César Braher -->
+<a href="https://wa.me/524641093886?text=Hola%20C%C3%A9sar%2C%20vengo%20de%20tu%20p%C3%A1gina%20web%20y%20me%20gustar%C3%ADa%20platicar%20contigo%20sobre%20un%20proyecto." 
+   class="whatsapp-float" 
+   target="_blank" 
+   rel="noopener noreferrer" 
+   aria-label="Contactar a César Braher por WhatsApp">
+    <svg viewBox="0 0 32 32" class="whatsapp-icon">
+        <path fill="currentColor" d="M16.004 3.2c-7.06 0-12.8 5.74-12.8 12.8 0 2.256.588 4.458 1.706 6.4L3.2 28.8l6.586-1.726a12.74 12.74 0 0 0 6.218 1.61h.006c7.058 0 12.798-5.74 12.798-12.8 0-3.42-1.332-6.636-3.75-9.054A12.716 12.716 0 0 0 16.004 3.2zm0 23.332h-.004a10.62 10.62 0 0 1-5.414-1.482l-.388-.23-3.908 1.024 1.044-3.81-.252-.402a10.605 10.605 0 0 1-1.628-5.632c0-5.868 4.774-10.642 10.646-10.642 2.842 0 5.514 1.108 7.522 3.118a10.573 10.573 0 0 1 3.116 7.528c0 5.868-4.776 10.628-10.734 10.628zm5.838-7.97c-.32-.16-1.892-.934-2.186-1.04-.294-.108-.506-.16-.72.16-.214.32-.826 1.04-1.014 1.254-.186.214-.374.24-.694.08-.32-.16-1.35-.498-2.572-1.588-.95-.848-1.592-1.894-1.778-2.214-.186-.32-.02-.494.14-.652.144-.144.32-.374.48-.56.16-.186.214-.32.32-.534.106-.214.054-.4-.026-.56-.08-.16-.72-1.734-.986-2.374-.26-.624-.524-.54-.72-.55l-.614-.01c-.214 0-.56.08-.854.4-.294.32-1.12 1.094-1.12 2.668 0 1.574 1.146 3.094 1.306 3.308.16.214 2.256 3.444 5.466 4.83.764.33 1.36.526 1.824.674.766.244 1.464.21 2.016.128.616-.092 1.892-.774 2.158-1.52.266-.748.266-1.388.186-1.52-.08-.134-.294-.214-.614-.374z"/>
+    </svg>
+    <span class="whatsapp-tooltip">¿Hablamos de tu proyecto?</span>
+</a>
+
+<style>
+.whatsapp-float {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    width: 62px;
+    height: 62px;
+    background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+    color: #ffffff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 25px rgba(37, 211, 102, 0.45);
+    z-index: 9999;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    text-decoration: none;
+}
+.whatsapp-float:hover {
+    transform: scale(1.1) translateY(-4px);
+    box-shadow: 0 12px 32px rgba(37, 211, 102, 0.65);
+    color: #ffffff;
+}
+.whatsapp-icon {
+    width: 34px;
+    height: 34px;
+}
+.whatsapp-tooltip {
+    position: absolute;
+    right: 75px;
+    background: #151126;
+    color: #F8FAFC;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(10px);
+    transition: all 0.3s ease;
+}
+.whatsapp-float:hover .whatsapp-tooltip {
+    opacity: 1;
+    transform: translateX(0);
+}
+@media (max-width: 768px) {
+    .whatsapp-float { bottom: 20px; right: 20px; width: 56px; height: 56px; }
+    .whatsapp-tooltip { display: none; }
+}
+</style>
