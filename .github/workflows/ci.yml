@@ -70,7 +70,7 @@ jobs:
   deploy-hostinger:
     name: Deploy to Hostinger (SSH)
     needs: build-and-verify
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.ENABLE_HOSTINGER_DEPLOY == 'true'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
 
     steps:
@@ -80,19 +80,47 @@ jobs:
           name: cebraher-production-build
           path: ./deploy-bundle
 
-      - name: Deploy via SSH to Hostinger
+      - name: Deploy via SSH to Hostinger (191.96.56.71:65002)
         env:
-          SSH_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
-          SSH_PORT: ${{ secrets.HOSTINGER_SSH_PORT || '65002' }}
-          SSH_USER: ${{ secrets.HOSTINGER_SSH_USER }}
-          SSH_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
-          APP_DIR: ${{ secrets.HOSTINGER_APP_DIR || '~/domains/cebraher.com/public_html' }}
+          SSH_HOST: ${{ secrets.SSH_HOST || '191.96.56.71' }}
+          SSH_PORT: ${{ secrets.SSH_PORT || '65002' }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME || 'u529127178' }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY || secrets.HOSTINGER_SSH_KEY }}
+          EXPECTED_FP: "SHA256:BSTXlZnj3EfIH48wI20RyZG1C9kj3d6bjjBN54AdBME"
+          CUSTOM_APP_DIR: ${{ secrets.HOSTINGER_APP_DIR || vars.HOSTINGER_APP_DIR }}
         run: |
+          if [ -z "$SSH_PRIVATE_KEY" ]; then
+            echo "::notice::SSH_PRIVATE_KEY secret is not configured yet in GitHub Actions. Skipping Hostinger SSH deploy."
+            exit 0
+          fi
+
           mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/id_deploy
-          chmod 600 ~/.ssh/id_deploy
-          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
 
-          rsync -avz -e "ssh -i ~/.ssh/id_deploy -p $SSH_PORT" ./deploy-bundle/ "$SSH_USER@$SSH_HOST:$APP_DIR/"
+          ssh-keyscan -p "$SSH_PORT" -t ed25519 "$SSH_HOST" > ~/.ssh/known_hosts 2>/dev/null
+          ACTUAL_FP=$(ssh-keygen -lf ~/.ssh/known_hosts | awk '{print $2}')
+          echo "Hostinger server ED25519 fingerprint: $ACTUAL_FP"
+          if [ "$ACTUAL_FP" != "$EXPECTED_FP" ]; then
+            echo "::error::Hostinger SSH host key fingerprint mismatch! Expected $EXPECTED_FP, got $ACTUAL_FP"
+            exit 1
+          fi
 
-          ssh -i ~/.ssh/id_deploy -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "cd $APP_DIR && npm install --omit=dev && mkdir -p tmp && touch tmp/restart.txt"
+          TARGET_DIR="$CUSTOM_APP_DIR"
+          if [ -z "$TARGET_DIR" ]; then
+            TARGET_DIR=$(ssh -i ~/.ssh/id_ed25519 -p "$SSH_PORT" "$SSH_USERNAME@$SSH_HOST" '
+              if [ -d "/home/u529127178/domains/cebraher.com/public_html" ]; then
+                echo "/home/u529127178/domains/cebraher.com/public_html"
+              else
+                mkdir -p "/home/u529127178/domains/cebraher.com/public_html"
+                echo "/home/u529127178/domains/cebraher.com/public_html"
+              fi
+            ')
+          fi
+
+          echo "Deploying to $SSH_USERNAME@$SSH_HOST:$TARGET_DIR ..."
+          rsync -avz -e "ssh -i ~/.ssh/id_ed25519 -p $SSH_PORT" ./deploy-bundle/ "$SSH_USERNAME@$SSH_HOST:$TARGET_DIR/"
+
+          ssh -i ~/.ssh/id_ed25519 -p "$SSH_PORT" "$SSH_USERNAME@$SSH_HOST" "cd \"$TARGET_DIR\" && (npm install --omit=dev || true) && mkdir -p tmp && touch tmp/restart.txt"
+          echo "Deployment to Hostinger completed successfully!"
