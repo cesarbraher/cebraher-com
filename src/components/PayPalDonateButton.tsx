@@ -1,3 +1,5 @@
+import { recordInteraction } from '../lib/analytics';
+
 interface PayPalDonateButtonProps {
   className?: string;
 }
@@ -8,6 +10,7 @@ export function PayPalDonateButton({ className = '' }: PayPalDonateButtonProps) 
       action="https://www.paypal.com/donate"
       method="post"
       target="_top"
+      onSubmit={() => recordInteraction('paypalDonateClicks')}
       className={`inline-flex ${className}`}
     >
       <input type="hidden" name="hosted_button_id" value="MRSWVW2JAUWU8" />

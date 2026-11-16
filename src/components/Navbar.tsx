@@ -3,7 +3,7 @@ import { Menu, X } from 'lucide-react';
 import { SITE_ICON } from '../lib/assets';
 
 interface NavbarProps {
-  mode: 'landing' | 'admin' | 'cancelar-donacion' | 'gracias-por-donar';
+  mode: 'landing' | 'admin' | 'cancelar-donacion' | 'gracias-por-donar' | 'estadisticas';
   onSwitchMode: (mode: 'landing' | 'admin') => void;
 }
 

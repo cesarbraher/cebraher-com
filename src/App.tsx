@@ -6,7 +6,9 @@ import { HeroSection } from './components/HeroSection';
 import { ManifestoContactSection } from './components/ManifestoContactSection';
 import { Navbar } from './components/Navbar';
 import { ProjectsSection } from './components/ProjectsSection';
+import { StatisticsPage } from './components/StatisticsPage';
 import { TrackingPanel } from './components/TrackingPanel';
+import { recordInteraction, trackPageVisit } from './lib/analytics';
 import {
   DEFAULT_BLOGGER_CONFIG,
   fetchLiveBloggerPostsBrowser,
@@ -16,13 +18,14 @@ import {
 } from './lib/blogger';
 import type { BlogPost, BloggerConfig, Category, Project, SystemStatus } from './lib/types';
 
-type AppViewMode = 'landing' | 'admin' | 'cancelar-donacion' | 'gracias-por-donar';
+type AppViewMode = 'landing' | 'admin' | 'cancelar-donacion' | 'gracias-por-donar' | 'estadisticas';
 
 function resolveModeFromLocation(): AppViewMode {
   if (typeof window === 'undefined') return 'landing';
   const cleanPath = window.location.pathname.replace(/\/+$/, '').toLowerCase();
   if (cleanPath === '/cancelar-donacion') return 'cancelar-donacion';
   if (cleanPath === '/gracias-por-donar') return 'gracias-por-donar';
+  if (cleanPath === '/estadisticas') return 'estadisticas';
   return 'landing';
 }
 
@@ -40,8 +43,11 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    trackPageVisit();
     const onPopState = () => {
-      setMode(resolveModeFromLocation());
+      const nextMode = resolveModeFromLocation();
+      setMode(nextMode);
+      trackPageVisit();
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
@@ -165,6 +171,9 @@ export default function App() {
   const publishedPosts = useMemo(() => posts.filter((p) => p.published), [posts]);
 
   const scrollTo = (id: string) => {
+    trackPageVisit(`/#${id}`);
+    if (id === 'proyectos') recordInteraction('projectClicks');
+    if (id === 'blog') recordInteraction('blogReads');
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -174,6 +183,7 @@ export default function App() {
       window.history.pushState({}, '', nextUrl);
     }
     setMode('landing');
+    trackPageVisit(nextUrl);
     if (sectionId) {
       setTimeout(() => {
         document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' });
@@ -181,6 +191,22 @@ export default function App() {
     } else {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+  };
+
+  const openStatsPage = () => {
+    if (window.location.pathname !== '/estadisticas') {
+      window.history.pushState({}, '', '/estadisticas');
+    }
+    setMode('estadisticas');
+    trackPageVisit('/estadisticas');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenPost = (post: BlogPost | null) => {
+    if (post) {
+      recordInteraction('blogReads');
+    }
+    setReadingPost(post);
   };
 
   return (
@@ -201,6 +227,19 @@ export default function App() {
           <div className="h-12 w-2/3 rounded-xl bg-zinc-900 animate-pulse" />
           <div className="h-64 w-full rounded-2xl bg-zinc-900 animate-pulse" />
         </div>
+      ) : mode === 'estadisticas' ? (
+        <>
+          <StatisticsPage
+            publishedPostsCount={publishedPosts.length}
+            projectsCount={projects.length}
+            onGoHome={() => navigateToSection()}
+            onOpenAdmin={() => {
+              setMode('admin');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+          <ManifestoContactSection onMessageSent={loadAllData} onOpenStats={openStatsPage} />
+        </>
       ) : mode === 'cancelar-donacion' ? (
         <>
           <CancelDonationPage
@@ -209,7 +248,7 @@ export default function App() {
             onGoToBlog={() => navigateToSection('blog')}
             onGoHome={() => navigateToSection()}
           />
-          <ManifestoContactSection onMessageSent={loadAllData} />
+          <ManifestoContactSection onMessageSent={loadAllData} onOpenStats={openStatsPage} />
         </>
       ) : mode === 'gracias-por-donar' ? (
         <>
@@ -219,7 +258,7 @@ export default function App() {
             onGoToBlog={() => navigateToSection('blog')}
             onGoHome={() => navigateToSection()}
           />
-          <ManifestoContactSection onMessageSent={loadAllData} />
+          <ManifestoContactSection onMessageSent={loadAllData} onOpenStats={openStatsPage} />
         </>
       ) : mode === 'admin' ? (
         <AdminDashboard
@@ -247,7 +286,7 @@ export default function App() {
             bloggerSynced={bloggerSynced}
             syncingBlogger={syncingBlogger}
             onSyncBlogger={handleManualSyncBlogger}
-            onOpenPost={(post) => setReadingPost(post)}
+            onOpenPost={(post) => handleOpenPost(post)}
           />
           <ProjectsSection projects={projects} />
           <TrackingPanel
@@ -269,9 +308,9 @@ export default function App() {
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             readingPost={readingPost}
-            onSelectPost={setReadingPost}
+            onSelectPost={handleOpenPost}
           />
-          <ManifestoContactSection onMessageSent={loadAllData} />
+          <ManifestoContactSection onMessageSent={loadAllData} onOpenStats={openStatsPage} />
         </main>
       )}
     </div>

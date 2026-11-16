@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from 'react';
-import { ArrowUpRight, CheckCircle2, Mail, MessageCircle, Send } from 'lucide-react';
+import { ArrowUpRight, BarChart3, CheckCircle2, Mail, MessageCircle, Send } from 'lucide-react';
+import { recordInteraction } from '../lib/analytics';
 import { SITE_ICON } from '../lib/assets';
 
 interface ManifestoContactSectionProps {
   onMessageSent?: () => void;
+  onOpenStats?: () => void;
 }
 
 const ECOSYSTEM_LINKS = [
@@ -19,7 +21,7 @@ const ECOSYSTEM_LINKS = [
   { label: 'Spotify · Cesar Bravo', desc: 'Catálogo Musical Oficial', url: 'https://open.spotify.com/intl-es/artist/66p3p4W65G4huFUZITROUW' },
 ];
 
-export function ManifestoContactSection({ onMessageSent }: ManifestoContactSectionProps) {
+export function ManifestoContactSection({ onMessageSent, onOpenStats }: ManifestoContactSectionProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [subject, setSubject] = useState('');
@@ -52,6 +54,7 @@ export function ManifestoContactSection({ onMessageSent }: ManifestoContactSecti
         const payload = await res.json().catch(() => ({}));
         throw new Error(payload.error || 'No se pudo enviar el mensaje.');
       }
+      recordInteraction('contactSubmissions');
       setSent(true);
       setName('');
       setEmail('');
@@ -245,7 +248,7 @@ export function ManifestoContactSection({ onMessageSent }: ManifestoContactSecti
         </div>
       </section>
 
-      {/* Quiet Footer */}
+      {/* Quiet Footer with exclusive link to /estadisticas */}
       <footer className="border-t border-zinc-800/80 bg-[#07080C] py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500">
           <div className="flex items-center gap-2.5">
@@ -258,9 +261,26 @@ export function ManifestoContactSection({ onMessageSent }: ManifestoContactSecti
               © {new Date().getFullYear()} Cesar Augusto Bravo Hernández (Cesar Braher) · CEBRA Arte Digital &amp; Tecnología.
             </p>
           </div>
-          <p>
-            Valle de Santiago &amp; Salamanca, Guanajuato, México · Código bajo licencia Apache 2.0
-          </p>
+          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-3">
+            <span>
+              Valle de Santiago &amp; Salamanca, Guanajuato, México · Código bajo licencia Apache 2.0
+            </span>
+            <span className="text-zinc-700" aria-hidden="true">·</span>
+            <a
+              href="/estadisticas"
+              onClick={(e) => {
+                if (onOpenStats) {
+                  e.preventDefault();
+                  onOpenStats();
+                }
+              }}
+              className="inline-flex items-center gap-1.5 text-zinc-400 hover:text-amber-400 font-medium transition-colors"
+              title="Ver estadísticas de visitas del sitio (Acceso con contraseña)"
+            >
+              <BarChart3 className="w-3.5 h-3.5" aria-hidden="true" />
+              Estadísticas
+            </a>
+          </div>
         </div>
       </footer>
 
@@ -269,6 +289,7 @@ export function ManifestoContactSection({ onMessageSent }: ManifestoContactSecti
         href="https://wa.me/524641093886?text=Hola%20Cesar%2C%20vengo%20de%20tu%20p%C3%A1gina%20web%20y%20me%20gustar%C3%ADa%20platicar%20contigo%20sobre%20un%20proyecto."
         target="_blank"
         rel="noopener noreferrer"
+        onClick={() => recordInteraction('whatsappClicks')}
         aria-label="Contactar a Cesar Braher por WhatsApp"
         title="¿Hablamos de tu proyecto por WhatsApp?"
         className="fixed bottom-5 right-5 z-40 w-12 h-12 sm:w-13 sm:h-13 rounded-full bg-emerald-500 hover:bg-emerald-400 text-zinc-950 flex items-center justify-center shadow-lg transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"

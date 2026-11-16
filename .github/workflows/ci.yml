@@ -44,9 +44,10 @@ jobs:
           mkdir -p deploy-bundle/dist deploy-bundle/api deploy-bundle/database deploy-bundle/data
           cp -r dist/* deploy-bundle/
           cp -r dist/* deploy-bundle/dist/
-          mkdir -p deploy-bundle/cancelar-donacion deploy-bundle/gracias-por-donar
+          mkdir -p deploy-bundle/cancelar-donacion deploy-bundle/gracias-por-donar deploy-bundle/estadisticas
           cp dist/index.html deploy-bundle/cancelar-donacion/index.html
           cp dist/index.html deploy-bundle/gracias-por-donar/index.html
+          cp dist/index.html deploy-bundle/estadisticas/index.html
           cp server.js package.json deploy-bundle/
           cp database/hostinger_schema.sql deploy-bundle/database/
 
@@ -71,8 +72,10 @@ jobs:
           curl -fsS "http://127.0.0.1:3000/api/categories" > deploy-bundle/api/categories.json
           curl -fsS "http://127.0.0.1:3000/api/projects" > deploy-bundle/api/projects.json
           curl -fsS "http://127.0.0.1:3000/api/blogger/config" > deploy-bundle/api/blogger-config.json
+          curl -fsS "http://127.0.0.1:3000/api/analytics/summary" > deploy-bundle/api/analytics.json
           curl -fsS "http://127.0.0.1:3000/cancelar-donacion" > /dev/null
           curl -fsS "http://127.0.0.1:3000/gracias-por-donar" > /dev/null
+          curl -fsS "http://127.0.0.1:3000/estadisticas" > /dev/null
           if [ -f data/db.json ]; then
             cp data/db.json deploy-bundle/data/db.json
           fi
@@ -90,10 +93,12 @@ jobs:
             RewriteRule ^api/projects/?$ api/projects.json [L,T=application/json]
             RewriteRule ^api/status/?$ api/status.json [L,T=application/json]
             RewriteRule ^api/blogger/config/?$ api/blogger-config.json [L,T=application/json]
+            RewriteRule ^api/analytics/summary/?$ api/analytics.json [L,T=application/json]
 
-            # Explicit PayPal return/cancel subpages
+            # Explicit subpages (/cancelar-donacion, /gracias-por-donar, /estadisticas)
             RewriteRule ^cancelar-donacion/?$ index.html [L]
             RewriteRule ^gracias-por-donar/?$ index.html [L]
+            RewriteRule ^estadisticas/?$ index.html [L]
 
             # Serve existing files and directories directly
             RewriteCond %{REQUEST_FILENAME} -f [OR]

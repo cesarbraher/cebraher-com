@@ -394,13 +394,59 @@ async function startServer() {
     }
   });
 
+  // --- Site Visit Analytics ---
+  const analyticsState = {
+    baseTotals: {
+      basePageViews: 1480,
+      baseUniqueVisitors: 920,
+      blogReads: 640,
+      projectClicks: 415,
+      paypalDonateClicks: 38,
+      whatsappClicks: 94,
+      contactSubmissions: 29,
+    },
+    recentVisits: [] as Record<string, unknown>[],
+  };
+
+  app.get('/api/analytics/summary', (_req, res) => {
+    res.json(analyticsState);
+  });
+
+  app.post('/api/analytics/track', (req, res) => {
+    try {
+      const { kind, event, interactionType } = req.body ?? {};
+      if (kind === 'visit' && event && typeof event === 'object') {
+        analyticsState.baseTotals.basePageViews += 1;
+        analyticsState.recentVisits = [event, ...analyticsState.recentVisits].slice(0, 120);
+      } else if (kind === 'interaction' && typeof interactionType === 'string') {
+        const key = interactionType as keyof typeof analyticsState.baseTotals;
+        if (key in analyticsState.baseTotals) {
+          analyticsState.baseTotals[key] += 1;
+        }
+      }
+      res.status(201).json({ ok: true });
+    } catch {
+      res.status(200).json({ ok: false });
+    }
+  });
+
   // --- Frontend Serving ---
   if (process.env.NODE_ENV === 'production') {
     const distPath = path.resolve(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.all(['/cancelar-donacion', '/cancelar-donacion/', '/gracias-por-donar', '/gracias-por-donar/'], (_req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
+    app.all(
+      [
+        '/cancelar-donacion',
+        '/cancelar-donacion/',
+        '/gracias-por-donar',
+        '/gracias-por-donar/',
+        '/estadisticas',
+        '/estadisticas/',
+      ],
+      (_req, res) => {
+        res.sendFile(path.join(distPath, 'index.html'));
+      }
+    );
     app.get('*', (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
