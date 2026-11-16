@@ -20,6 +20,49 @@ import {
   updatePost,
   updateProject,
 } from './server/db.ts';
+import {
+  extractCategoriesFromPosts,
+  fetchBloggerPostsFromServer,
+  getBloggerConfig,
+  saveBloggerConfig,
+} from './server/blogger.ts';
+
+async function getCombinedBlogPosts(options?: {
+  includeDrafts?: boolean;
+  category?: string;
+  forceRefresh?: boolean;
+}) {
+  const bloggerCfg = getBloggerConfig();
+  const [bloggerResult, dbPosts] = await Promise.all([
+    fetchBloggerPostsFromServer(Boolean(options?.forceRefresh)),
+    listPosts({ includeDrafts: options?.includeDrafts }),
+  ]);
+
+  let combined = [...bloggerResult.posts];
+
+  if (combined.length === 0 || bloggerCfg.includeLocalFallback) {
+    const existingSlugs = new Set(combined.map((p) => p.slug));
+    const localMarked = dbPosts
+      .filter((p) => !existingSlugs.has(p.slug))
+      .map((p) => ({
+        ...p,
+        source: 'local' as const,
+        featured: combined.length > 0 ? false : p.featured,
+      }));
+    combined = [...combined, ...localMarked];
+  }
+
+  if (options?.category && options.category !== 'all') {
+    combined = combined.filter((p) => p.categorySlug === options.category);
+  }
+
+  return {
+    posts: combined,
+    bloggerSynced: bloggerResult.synced,
+    bloggerPostsCount: bloggerResult.posts.length,
+    bloggerError: bloggerResult.error,
+  };
+}
 
 async function startServer() {
   await initDatabase();
@@ -41,18 +84,30 @@ async function startServer() {
   // --- Health & Status ---
   app.get('/api/status', async (_req, res) => {
     try {
-      const [posts, categories, projects, messages] = await Promise.all([
-        listPosts({ includeDrafts: true }),
+      const [blogData, dbCategories, projects, messages] = await Promise.all([
+        getCombinedBlogPosts({ includeDrafts: true }),
         listCategories(),
         listProjects(),
         listMessages(),
       ]);
+      const bloggerCfg = getBloggerConfig();
+      const categories = extractCategoriesFromPosts(blogData.posts, dbCategories);
       res.json({
         db: getDbStatus(),
+        blogger: {
+          blogName: bloggerCfg.blogName,
+          accountEmail: bloggerCfg.accountEmail,
+          blogUrl: bloggerCfg.blogUrl,
+          blogId: bloggerCfg.blogId,
+          enabled: bloggerCfg.enabled,
+          includeLocalFallback: bloggerCfg.includeLocalFallback,
+          synced: blogData.bloggerSynced,
+          bloggerPostsCount: blogData.bloggerPostsCount,
+        },
         requireAuth,
         counts: {
-          postsTotal: posts.length,
-          postsPublished: posts.filter((p) => p.published).length,
+          postsTotal: blogData.posts.length,
+          postsPublished: blogData.posts.filter((p) => p.published).length,
           categories: categories.length,
           projects: projects.length,
           unreadMessages: messages.filter((m) => !m.read).length,
@@ -60,6 +115,57 @@ async function startServer() {
       });
     } catch (err) {
       res.status(500).json({ error: 'No se pudo consultar el estado del sistema.' });
+    }
+  });
+
+  // --- Blogger Configuration & Sync ---
+  app.get('/api/blogger/config', async (_req, res) => {
+    const cfg = getBloggerConfig();
+    res.json({
+      blogName: cfg.blogName,
+      accountEmail: cfg.accountEmail,
+      blogUrl: cfg.blogUrl,
+      blogId: cfg.blogId,
+      enabled: cfg.enabled,
+      includeLocalFallback: cfg.includeLocalFallback,
+      lastSyncedAt: cfg.lastSyncedAt,
+    });
+  });
+
+  app.put('/api/blogger/config', checkAdmin, async (req, res) => {
+    try {
+      const updated = saveBloggerConfig(req.body ?? {});
+      const syncResult = await getCombinedBlogPosts({ includeDrafts: true, forceRefresh: true });
+      res.json({
+        config: {
+          blogName: updated.blogName,
+          accountEmail: updated.accountEmail,
+          blogUrl: updated.blogUrl,
+          blogId: updated.blogId,
+          enabled: updated.enabled,
+          includeLocalFallback: updated.includeLocalFallback,
+          lastSyncedAt: updated.lastSyncedAt,
+        },
+        synced: syncResult.bloggerSynced,
+        bloggerPostsCount: syncResult.bloggerPostsCount,
+        posts: syncResult.posts,
+      });
+    } catch {
+      res.status(500).json({ error: 'No se pudo actualizar la configuración de Blogger.' });
+    }
+  });
+
+  app.post('/api/blogger/sync', async (_req, res) => {
+    try {
+      const syncResult = await getCombinedBlogPosts({ includeDrafts: true, forceRefresh: true });
+      res.json({
+        synced: syncResult.bloggerSynced,
+        bloggerPostsCount: syncResult.bloggerPostsCount,
+        error: syncResult.bloggerError,
+        posts: syncResult.posts,
+      });
+    } catch {
+      res.status(500).json({ error: 'Error al sincronizar con Blogger.' });
     }
   });
 
@@ -73,7 +179,11 @@ async function startServer() {
   // --- Categories ---
   app.get('/api/categories', async (_req, res) => {
     try {
-      const categories = await listCategories();
+      const [dbCategories, blogData] = await Promise.all([
+        listCategories(),
+        getCombinedBlogPosts({ includeDrafts: false }),
+      ]);
+      const categories = extractCategoriesFromPosts(blogData.posts, dbCategories);
       res.json(categories);
     } catch {
       res.status(500).json({ error: 'Error al obtener categorías.' });
@@ -107,8 +217,9 @@ async function startServer() {
   app.get('/api/posts', async (req, res) => {
     try {
       const includeDrafts = req.query.all === 'true';
+      const forceRefresh = req.query.refresh === 'true';
       const category = typeof req.query.category === 'string' ? req.query.category : undefined;
-      const posts = await listPosts({ includeDrafts, category });
+      const { posts } = await getCombinedBlogPosts({ includeDrafts, category, forceRefresh });
       res.json(posts);
     } catch {
       res.status(500).json({ error: 'Error al obtener las entradas del blog.' });

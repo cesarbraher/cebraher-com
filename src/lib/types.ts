@@ -6,12 +6,24 @@ export interface Category {
   createdAt: string;
 }
 
+export interface BloggerConfig {
+  blogName: string;
+  accountEmail: string;
+  blogUrl: string;
+  blogId?: string;
+  apiKey?: string;
+  enabled: boolean;
+  includeLocalFallback: boolean;
+  lastSyncedAt?: string;
+}
+
 export interface BlogPost {
   id: string;
   title: string;
   slug: string;
   excerpt: string;
   content: string;
+  contentHtml?: string;
   categorySlug: string;
   categoryName: string;
   coverImage: string;
@@ -21,6 +33,9 @@ export interface BlogPost {
   author: string;
   createdAt: string;
   updatedAt: string;
+  source?: 'blogger' | 'local';
+  externalUrl?: string;
+  labels?: string[];
 }
 
 export interface Milestone {
@@ -65,6 +80,16 @@ export interface SystemStatus {
     connected: boolean;
     database: string;
     hostingerConfigured?: boolean;
+  };
+  blogger?: {
+    blogName: string;
+    accountEmail: string;
+    blogUrl: string;
+    blogId?: string;
+    enabled: boolean;
+    includeLocalFallback: boolean;
+    synced: boolean;
+    bloggerPostsCount: number;
   };
   requireAuth: boolean;
   counts: {

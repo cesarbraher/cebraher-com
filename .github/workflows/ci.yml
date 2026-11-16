@@ -67,6 +67,7 @@ jobs:
           curl -fsS "http://127.0.0.1:3000/api/posts?all=true" > deploy-bundle/api/posts.json
           curl -fsS "http://127.0.0.1:3000/api/categories" > deploy-bundle/api/categories.json
           curl -fsS "http://127.0.0.1:3000/api/projects" > deploy-bundle/api/projects.json
+          curl -fsS "http://127.0.0.1:3000/api/blogger/config" > deploy-bundle/api/blogger-config.json
           if [ -f data/db.json ]; then
             cp data/db.json deploy-bundle/data/db.json
           fi
@@ -83,6 +84,7 @@ jobs:
             RewriteRule ^api/categories/?$ api/categories.json [L,T=application/json]
             RewriteRule ^api/projects/?$ api/projects.json [L,T=application/json]
             RewriteRule ^api/status/?$ api/status.json [L,T=application/json]
+            RewriteRule ^api/blogger/config/?$ api/blogger-config.json [L,T=application/json]
 
             # Serve existing files and directories directly
             RewriteCond %{REQUEST_FILENAME} -f [OR]

@@ -3,6 +3,7 @@ import {
   Check,
   Database,
   Edit3,
+  ExternalLink,
   Eye,
   FolderPlus,
   Github,
@@ -11,6 +12,7 @@ import {
   Lock,
   Plus,
   RefreshCw,
+  Rss,
   Save,
   Star,
   Trash2,
@@ -18,6 +20,7 @@ import {
 import { COVER_PRESETS, formatSpanishDate, resolveCoverImage } from '../lib/assets';
 import type {
   BlogPost,
+  BloggerConfig,
   Category,
   ContactMessage,
   Project,
@@ -31,6 +34,11 @@ interface AdminDashboardProps {
   categories: Category[];
   projects: Project[];
   status: SystemStatus | null;
+  bloggerConfig: BloggerConfig;
+  bloggerSynced: boolean;
+  syncingBlogger: boolean;
+  onUpdateBloggerConfig: (next: Partial<BloggerConfig>) => Promise<void>;
+  onSyncBlogger: () => Promise<void>;
   onRefreshAll: () => Promise<void>;
   onBackToSite: () => void;
 }
@@ -42,6 +50,11 @@ export function AdminDashboard({
   categories,
   projects,
   status,
+  bloggerConfig,
+  bloggerSynced,
+  syncingBlogger,
+  onUpdateBloggerConfig,
+  onSyncBlogger,
   onRefreshAll,
   onBackToSite,
 }: AdminDashboardProps) {
@@ -51,6 +64,16 @@ export function AdminDashboard({
   const [authError, setAuthError] = useState('');
   const [feedback, setFeedback] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Blogger Config Form State
+  const [blogNameInput, setBlogNameInput] = useState(bloggerConfig.blogName || 'CESARBRAHER');
+  const [accountEmailInput, setAccountEmailInput] = useState(bloggerConfig.accountEmail || 'cesarbraher@gmail.com');
+  const [blogUrlInput, setBlogUrlInput] = useState(bloggerConfig.blogUrl || 'https://cesarbraher.blogspot.com');
+  const [blogIdInput, setBlogIdInput] = useState(bloggerConfig.blogId || '');
+  const [apiKeyInput, setApiKeyInput] = useState(bloggerConfig.apiKey || '');
+  const [bloggerEnabledInput, setBloggerEnabledInput] = useState(bloggerConfig.enabled);
+  const [includeFallbackInput, setIncludeFallbackInput] = useState(bloggerConfig.includeLocalFallback);
+  const [savingBlogger, setSavingBlogger] = useState(false);
 
   // Post Editor State
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
@@ -511,14 +534,178 @@ export function AdminDashboard({
           </div>
         )}
 
-        {/* TAB 1: BLOG POSTS */}
+        {/* TAB 1: BLOG POSTS & BLOGGER INTEGRATION */}
         {activeTab === 'posts' && (
           <div className="space-y-6">
+            {/* Blogger Integration Card */}
+            <div className="rounded-2xl bg-[#11131C] border border-amber-500/35 p-5 sm:p-6 space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Rss className="w-4 h-4 text-amber-400" aria-hidden="true" />
+                    <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">
+                      Conexión Blogger Activa
+                    </span>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+                        bloggerSynced
+                          ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+                          : 'bg-zinc-800 text-zinc-300'
+                      }`}
+                    >
+                      {bloggerSynced ? 'Feed sincronizado en vivo' : 'Listo para recibir entradas'}
+                    </span>
+                  </div>
+                  <h3 className="font-display text-lg font-bold text-zinc-50">
+                    Blog: {bloggerConfig.blogName} ({bloggerConfig.accountEmail})
+                  </h3>
+                  <p className="text-xs sm:text-sm text-zinc-400 mt-0.5">
+                    Lo que subas a Blogger en tu cuenta <strong className="text-zinc-200">{bloggerConfig.accountEmail}</strong> del blog{' '}
+                    <strong className="text-zinc-200">{bloggerConfig.blogName}</strong> aparece automáticamente en las últimas entradas de la Landing Page y en la sección del Blog.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await onSyncBlogger();
+                      showToast('Sincronización con Blogger ejecutada.');
+                    }}
+                    disabled={syncingBlogger}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-zinc-700 text-xs font-semibold text-zinc-200 hover:border-amber-500 hover:text-amber-400 cursor-pointer disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${syncingBlogger ? 'animate-spin' : ''}`} aria-hidden="true" />
+                    {syncingBlogger ? 'Sincronizando...' : 'Sincronizar ahora'}
+                  </button>
+                  <a
+                    href="https://www.blogger.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-amber-500 text-zinc-950 text-xs font-semibold hover:bg-amber-400"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+                    Abrir Blogger
+                  </a>
+                </div>
+              </div>
+
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setSavingBlogger(true);
+                  setErrorMsg(null);
+                  try {
+                    const nextCfg: Partial<BloggerConfig> = {
+                      blogName: blogNameInput.trim() || 'CESARBRAHER',
+                      accountEmail: accountEmailInput.trim() || 'cesarbraher@gmail.com',
+                      blogUrl: blogUrlInput.trim() || 'https://cesarbraher.blogspot.com',
+                      blogId: blogIdInput.trim(),
+                      apiKey: apiKeyInput.trim(),
+                      enabled: bloggerEnabledInput,
+                      includeLocalFallback: includeFallbackInput,
+                    };
+                    await fetch('/api/blogger/config', {
+                      method: 'PUT',
+                      headers: authHeaders(),
+                      body: JSON.stringify(nextCfg),
+                    }).catch(() => null);
+                    await onUpdateBloggerConfig(nextCfg);
+                    showToast('Configuración de Blogger guardada y sincronizada.');
+                  } catch (err: any) {
+                    setErrorMsg(err?.message || 'Error al guardar configuración de Blogger.');
+                  } finally {
+                    setSavingBlogger(false);
+                  }
+                }}
+                className="space-y-4"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-300 mb-1">Nombre del Blog</label>
+                    <input
+                      type="text"
+                      value={blogNameInput}
+                      onChange={(e) => setBlogNameInput(e.target.value)}
+                      placeholder="CESARBRAHER"
+                      className="w-full px-3 py-2 text-xs rounded-lg bg-[#090A0F] border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-300 mb-1">Cuenta de Blogger</label>
+                    <input
+                      type="email"
+                      value={accountEmailInput}
+                      onChange={(e) => setAccountEmailInput(e.target.value)}
+                      placeholder="cesarbraher@gmail.com"
+                      className="w-full px-3 py-2 text-xs rounded-lg bg-[#090A0F] border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-300 mb-1">
+                      URL pública del Blog en Blogger
+                    </label>
+                    <input
+                      type="text"
+                      value={blogUrlInput}
+                      onChange={(e) => setBlogUrlInput(e.target.value)}
+                      placeholder="https://cesarbraher.blogspot.com"
+                      className="w-full px-3 py-2 text-xs font-mono rounded-lg bg-[#090A0F] border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-300 mb-1">
+                      Blogger Blog ID (Opcional)
+                    </label>
+                    <input
+                      type="text"
+                      value={blogIdInput}
+                      onChange={(e) => setBlogIdInput(e.target.value)}
+                      placeholder="Ej. 1234567890123456789"
+                      className="w-full px-3 py-2 text-xs font-mono rounded-lg bg-[#090A0F] border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+                  <div className="flex flex-wrap items-center gap-5">
+                    <label className="inline-flex items-center gap-2 text-xs text-zinc-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={bloggerEnabledInput}
+                        onChange={(e) => setBloggerEnabledInput(e.target.checked)}
+                        className="accent-amber-500 w-4 h-4"
+                      />
+                      Sincronización automática con Blogger activa
+                    </label>
+                    <label className="inline-flex items-center gap-2 text-xs text-zinc-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={includeFallbackInput}
+                        onChange={(e) => setIncludeFallbackInput(e.target.checked)}
+                        className="accent-amber-500 w-4 h-4"
+                      />
+                      Incluir entradas del estudio como complemento
+                    </label>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={savingBlogger}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-amber-500 text-zinc-950 text-xs font-semibold hover:bg-amber-400 cursor-pointer disabled:opacity-50"
+                  >
+                    <Save className="w-3.5 h-3.5" aria-hidden="true" />
+                    {savingBlogger ? 'Guardando...' : 'Guardar conexión Blogger'}
+                  </button>
+                </div>
+              </form>
+            </div>
+
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h2 className="font-display text-2xl font-bold text-zinc-50">Administración de Entradas</h2>
+                <h2 className="font-display text-2xl font-bold text-zinc-50">Entradas Sincronizadas y Locales</h2>
                 <p className="text-sm text-zinc-400">
-                  Crea, edita, destaca o cambia entre borrador y publicado. Los cambios impactan de inmediato la landing.
+                  Las entradas de Blogger ({bloggerConfig.blogName}) tienen prioridad automática en la Landing Page y en la sección del Blog.
                 </p>
               </div>
               {!showPostForm && (
@@ -528,10 +715,10 @@ export function AdminDashboard({
                     resetPostForm();
                     setShowPostForm(true);
                   }}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-amber-500 text-zinc-950 text-xs font-semibold hover:bg-amber-400 whitespace-nowrap shrink-0 cursor-pointer"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-zinc-700 text-zinc-200 text-xs font-semibold hover:border-amber-500 hover:text-amber-400 whitespace-nowrap shrink-0 cursor-pointer"
                 >
                   <Plus className="w-4 h-4" aria-hidden="true" />
-                  Nueva entrada
+                  Nueva entrada local
                 </button>
               )}
             </div>
@@ -701,6 +888,11 @@ export function AdminDashboard({
                       </div>
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-400 mb-1">
+                          {post.source === 'blogger' && (
+                            <span className="px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 font-semibold">
+                              Blogger · {bloggerConfig.blogName}
+                            </span>
+                          )}
                           <span className="text-amber-400 font-medium">{post.categoryName}</span>
                           <span aria-hidden="true">·</span>
                           <span className={post.published ? 'text-emerald-400' : 'text-zinc-500'}>
@@ -716,41 +908,57 @@ export function AdminDashboard({
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                      <button
-                        type="button"
-                        onClick={() => handleTogglePostField(post, 'featured')}
-                        title="Destacar en portada"
-                        className={`p-2 rounded-lg border text-xs cursor-pointer ${
-                          post.featured
-                            ? 'border-amber-500/60 text-amber-400 bg-amber-500/10'
-                            : 'border-zinc-800 text-zinc-400 hover:text-zinc-200'
-                        }`}
-                      >
-                        <Star className="w-3.5 h-3.5" aria-hidden="true" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleTogglePostField(post, 'published')}
-                        className="px-3 py-1.5 rounded-lg border border-zinc-800 text-xs text-zinc-300 hover:border-zinc-600 cursor-pointer"
-                      >
-                        {post.published ? 'Pasar a borrador' : 'Publicar'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openEditPost(post)}
-                        className="p-2 rounded-lg border border-zinc-800 text-zinc-300 hover:border-amber-500 hover:text-amber-400 cursor-pointer"
-                        aria-label={`Editar ${post.title}`}
-                      >
-                        <Edit3 className="w-3.5 h-3.5" aria-hidden="true" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeletePost(post.id)}
-                        className="p-2 rounded-lg border border-zinc-800 text-zinc-400 hover:border-rose-500/60 hover:text-rose-400 cursor-pointer"
-                        aria-label={`Eliminar ${post.title}`}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
-                      </button>
+                      {post.source === 'blogger' ? (
+                        post.externalUrl && (
+                          <a
+                            href={post.externalUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-700 text-xs text-amber-400 hover:border-amber-500"
+                          >
+                            Ver en Blogger
+                            <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+                          </a>
+                        )
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePostField(post, 'featured')}
+                            title="Destacar en portada"
+                            className={`p-2 rounded-lg border text-xs cursor-pointer ${
+                              post.featured
+                                ? 'border-amber-500/60 text-amber-400 bg-amber-500/10'
+                                : 'border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                            }`}
+                          >
+                            <Star className="w-3.5 h-3.5" aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePostField(post, 'published')}
+                            className="px-3 py-1.5 rounded-lg border border-zinc-800 text-xs text-zinc-300 hover:border-zinc-600 cursor-pointer"
+                          >
+                            {post.published ? 'Pasar a borrador' : 'Publicar'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openEditPost(post)}
+                            className="p-2 rounded-lg border border-zinc-800 text-zinc-300 hover:border-amber-500 hover:text-amber-400 cursor-pointer"
+                            aria-label={`Editar ${post.title}`}
+                          >
+                            <Edit3 className="w-3.5 h-3.5" aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeletePost(post.id)}
+                            className="p-2 rounded-lg border border-zinc-800 text-zinc-400 hover:border-rose-500/60 hover:text-rose-400 cursor-pointer"
+                            aria-label={`Eliminar ${post.title}`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}

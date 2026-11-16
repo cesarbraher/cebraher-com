@@ -1,5 +1,6 @@
-import { ArrowRight } from 'lucide-react';
-import { HERO_STUDIO_IMAGE } from '../lib/assets';
+import { ArrowRight, ExternalLink, RefreshCw, Rss } from 'lucide-react';
+import { formatSpanishDate, HERO_STUDIO_IMAGE, resolveCoverImage } from '../lib/assets';
+import type { BlogPost, BloggerConfig } from '../lib/types';
 import { ResilientImage } from './ResilientImage';
 
 interface HeroSectionProps {
@@ -7,6 +8,12 @@ interface HeroSectionProps {
   onReadBlog: () => void;
   publishedPostsCount: number;
   projectsCount: number;
+  latestPosts: BlogPost[];
+  bloggerConfig: BloggerConfig;
+  bloggerSynced: boolean;
+  syncingBlogger: boolean;
+  onSyncBlogger: () => void;
+  onOpenPost: (post: BlogPost) => void;
 }
 
 export function HeroSection({
@@ -14,7 +21,15 @@ export function HeroSection({
   onReadBlog,
   publishedPostsCount,
   projectsCount,
+  latestPosts,
+  bloggerConfig,
+  bloggerSynced,
+  syncingBlogger,
+  onSyncBlogger,
+  onOpenPost,
 }: HeroSectionProps) {
+  const topThreePosts = latestPosts.slice(0, 3);
+
   return (
     <section id="inicio" className="relative border-b border-zinc-800/80 bg-[#090A0F]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-12 lg:pt-16 lg:pb-16">
@@ -53,7 +68,7 @@ export function HeroSection({
                 onClick={onReadBlog}
                 className="text-sm font-medium text-zinc-300 hover:text-amber-400 transition-colors underline underline-offset-4 decoration-zinc-700 hover:decoration-amber-400 cursor-pointer whitespace-nowrap shrink-0"
               >
-                Leer últimas entradas
+                Leer últimas entradas de Blogger
               </button>
             </div>
           </div>
@@ -85,8 +100,89 @@ export function HeroSection({
           </div>
         </div>
 
+        {/* Últimas Entradas en la Landing Page (Sincronizadas con Blogger: CESARBRAHER) */}
+        {topThreePosts.length > 0 && (
+          <div className="mt-12 pt-8 border-t border-zinc-800/80">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                  <Rss className="w-3.5 h-3.5" aria-hidden="true" />
+                  Blogger · {bloggerConfig.blogName}
+                </span>
+                <h2 className="font-display text-sm sm:text-base font-bold text-zinc-100">
+                  Últimas entradas publicadas ({bloggerConfig.accountEmail})
+                </h2>
+                {bloggerSynced && (
+                  <span className="text-xs text-emerald-400 font-medium">
+                    · En vivo desde Blogger
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-3 self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={onSyncBlogger}
+                  disabled={syncingBlogger}
+                  className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-amber-400 transition-colors cursor-pointer disabled:opacity-50"
+                  title="Sincronizar últimas entradas de Blogger"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${syncingBlogger ? 'animate-spin' : ''}`} aria-hidden="true" />
+                  Actualizar feed
+                </button>
+                <span className="text-zinc-700" aria-hidden="true">·</span>
+                <button
+                  type="button"
+                  onClick={onReadBlog}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-amber-400 hover:text-amber-300 transition-colors cursor-pointer"
+                >
+                  Ir a la sección del Blog
+                  <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {topThreePosts.map((post, idx) => (
+                <article
+                  key={post.id}
+                  onClick={() => onOpenPost(post)}
+                  className="group flex items-start gap-3.5 p-3.5 rounded-xl bg-[#11131C]/90 border border-zinc-800/80 hover:border-amber-500/50 transition-colors cursor-pointer"
+                >
+                  <div className="w-20 h-20 rounded-lg overflow-hidden bg-[#0D0E15] border border-zinc-800/70 shrink-0">
+                    <ResilientImage
+                      src={resolveCoverImage(post.coverImage)}
+                      alt={post.title}
+                      fallbackTitle={post.title}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 mb-1">
+                      <span className="text-amber-400 font-semibold truncate">
+                        {idx === 0 ? 'Última entrada' : post.categoryName}
+                      </span>
+                      <span aria-hidden="true">·</span>
+                      <span className="font-mono tabular-nums shrink-0">{formatSpanishDate(post.createdAt)}</span>
+                    </div>
+                    <h3 className="font-display text-sm font-bold text-zinc-100 group-hover:text-amber-400 transition-colors line-clamp-2 leading-snug mb-1">
+                      {post.title}
+                    </h3>
+                    <div className="flex items-center gap-2 text-[11px] text-zinc-400">
+                      <span>Leer entrada</span>
+                      {post.externalUrl && (
+                        <ExternalLink className="w-3 h-3 text-zinc-500 group-hover:text-amber-400" aria-hidden="true" />
+                      )}
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Full-width 4-Column KPI / Identity Strip below the hero split */}
-        <div className="mt-12 pt-8 border-t border-zinc-800/80 grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+        <div className="mt-10 pt-8 border-t border-zinc-800/80 grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
           <div>
             <p className="font-mono text-2xl sm:text-3xl font-semibold text-zinc-50 tabular-nums">
               22+ años
@@ -108,7 +204,7 @@ export function HeroSection({
               {publishedPostsCount} artículos
             </p>
             <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-              Publicaciones administradas en MySQL Hostinger
+              Entradas sincronizadas con Blogger ({bloggerConfig.blogName})
             </p>
           </div>
           <div>

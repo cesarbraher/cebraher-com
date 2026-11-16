@@ -14,6 +14,7 @@ export interface IBlogPost {
   slug: string;
   excerpt: string;
   content: string;
+  contentHtml?: string;
   categorySlug: string;
   categoryName: string;
   coverImage: string;
@@ -23,6 +24,9 @@ export interface IBlogPost {
   author: string;
   createdAt: string;
   updatedAt: string;
+  source?: 'blogger' | 'local';
+  externalUrl?: string;
+  labels?: string[];
 }
 
 export interface IMilestone {
