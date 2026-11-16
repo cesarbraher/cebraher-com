@@ -39,33 +39,68 @@ jobs:
       - name: Build production client & server bundle
         run: npm run build
 
-      - name: Smoke test production server (/api/status)
+      - name: Smoke test server & package hybrid Hostinger bundle
         run: |
+          mkdir -p deploy-bundle/dist deploy-bundle/api deploy-bundle/database deploy-bundle/data
+          cp -r dist/* deploy-bundle/
+          cp -r dist/* deploy-bundle/dist/
+          cp server.js package.json deploy-bundle/
+          cp database/hostinger_schema.sql deploy-bundle/database/
+
           NODE_ENV=production PORT=3000 node server.js &
           SERVER_PID=$!
+          READY=0
           for i in {1..15}; do
-            if curl -fsS http://127.0.0.1:3000/api/status > /tmp/status.json 2>/dev/null; then
-              echo "Server healthy:"
-              cat /tmp/status.json
-              kill $SERVER_PID || true
-              exit 0
+            if curl -fsS http://127.0.0.1:3000/api/status > deploy-bundle/api/status.json 2>/dev/null; then
+              READY=1
+              break
             fi
             sleep 1
           done
-          echo "Server failed to respond on /api/status within 15s"
+
+          if [ "$READY" -ne 1 ]; then
+            echo "Server failed to respond on /api/status within 15s"
+            kill $SERVER_PID || true
+            exit 1
+          fi
+
+          curl -fsS "http://127.0.0.1:3000/api/posts?all=true" > deploy-bundle/api/posts.json
+          curl -fsS "http://127.0.0.1:3000/api/categories" > deploy-bundle/api/categories.json
+          curl -fsS "http://127.0.0.1:3000/api/projects" > deploy-bundle/api/projects.json
+          if [ -f data/db.json ]; then
+            cp data/db.json deploy-bundle/data/db.json
+          fi
+
           kill $SERVER_PID || true
-          exit 1
+
+          cat > deploy-bundle/.htaccess <<'EOF'
+          <IfModule mod_rewrite.c>
+            RewriteEngine On
+            RewriteBase /
+
+            # Serve pre-rendered JSON API endpoints when running on LiteSpeed static/shared hosting
+            RewriteRule ^api/posts/?$ api/posts.json [L,T=application/json]
+            RewriteRule ^api/categories/?$ api/categories.json [L,T=application/json]
+            RewriteRule ^api/projects/?$ api/projects.json [L,T=application/json]
+            RewriteRule ^api/status/?$ api/status.json [L,T=application/json]
+
+            # Serve existing files and directories directly
+            RewriteCond %{REQUEST_FILENAME} -f [OR]
+            RewriteCond %{REQUEST_FILENAME} -d
+            RewriteRule ^ - [L]
+
+            # SPA fallback to index.html
+            RewriteRule ^ index.html [L]
+          </IfModule>
+          EOF
 
       - name: Upload production artifact
         uses: actions/upload-artifact@v4
         with:
           name: cebraher-production-build
           retention-days: 7
-          path: |
-            dist/
-            server.js
-            package.json
-            database/hostinger_schema.sql
+          include-hidden-files: true
+          path: deploy-bundle/
 
   deploy-hostinger:
     name: Deploy to Hostinger (SSH)
@@ -109,18 +144,22 @@ jobs:
 
           TARGET_DIR="$CUSTOM_APP_DIR"
           if [ -z "$TARGET_DIR" ]; then
-            TARGET_DIR=$(ssh -i ~/.ssh/id_ed25519 -p "$SSH_PORT" "$SSH_USERNAME@$SSH_HOST" '
-              if [ -d "/home/u529127178/domains/cebraher.com/public_html" ]; then
-                echo "/home/u529127178/domains/cebraher.com/public_html"
-              else
-                mkdir -p "/home/u529127178/domains/cebraher.com/public_html"
-                echo "/home/u529127178/domains/cebraher.com/public_html"
-              fi
-            ')
+            TARGET_DIR="/home/u529127178/domains/cebraher.com/public_html"
           fi
 
           echo "Deploying to $SSH_USERNAME@$SSH_HOST:$TARGET_DIR ..."
+          ssh -i ~/.ssh/id_ed25519 -p "$SSH_PORT" "$SSH_USERNAME@$SSH_HOST" "mkdir -p \"$TARGET_DIR\""
           rsync -avz -e "ssh -i ~/.ssh/id_ed25519 -p $SSH_PORT" ./deploy-bundle/ "$SSH_USERNAME@$SSH_HOST:$TARGET_DIR/"
 
-          ssh -i ~/.ssh/id_ed25519 -p "$SSH_PORT" "$SSH_USERNAME@$SSH_HOST" "cd \"$TARGET_DIR\" && (npm install --omit=dev || true) && mkdir -p tmp && touch tmp/restart.txt"
+          ssh -i ~/.ssh/id_ed25519 -p "$SSH_PORT" "$SSH_USERNAME@$SSH_HOST" "
+            export PATH=/opt/alt/alt-nodejs22/root/usr/bin:/opt/alt/alt-nodejs20/root/usr/bin:/opt/alt/alt-nodejs18/root/usr/bin:\$PATH
+            cd \"$TARGET_DIR\"
+            if command -v npm >/dev/null 2>&1; then
+              echo \"Found npm at \$(command -v npm) (Node \$(node -v))\"
+              npm install --omit=dev --ignore-scripts || true
+            else
+              echo \"LiteSpeed static/hybrid mode active (no system npm in CloudLinux PATH)\"
+            fi
+            mkdir -p tmp && touch tmp/restart.txt
+          "
           echo "Deployment to Hostinger completed successfully!"
