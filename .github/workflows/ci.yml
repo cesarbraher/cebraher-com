@@ -1,0 +1,98 @@
+name: CI & Hostinger Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-verify:
+    name: Lint, Build & Smoke Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile || npm install
+
+      - name: TypeScript typecheck (lint)
+        run: npm run lint
+
+      - name: Build production client & server bundle
+        run: npm run build
+
+      - name: Smoke test production server (/api/status)
+        run: |
+          NODE_ENV=production PORT=3000 node server.js &
+          SERVER_PID=$!
+          for i in {1..15}; do
+            if curl -fsS http://127.0.0.1:3000/api/status > /tmp/status.json 2>/dev/null; then
+              echo "Server healthy:"
+              cat /tmp/status.json
+              kill $SERVER_PID || true
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Server failed to respond on /api/status within 15s"
+          kill $SERVER_PID || true
+          exit 1
+
+      - name: Upload production artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cebraher-production-build
+          retention-days: 7
+          path: |
+            dist/
+            server.js
+            package.json
+            database/hostinger_schema.sql
+
+  deploy-hostinger:
+    name: Deploy to Hostinger (SSH)
+    needs: build-and-verify
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.ENABLE_HOSTINGER_DEPLOY == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download production artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: cebraher-production-build
+          path: ./deploy-bundle
+
+      - name: Deploy via SSH to Hostinger
+        env:
+          SSH_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
+          SSH_PORT: ${{ secrets.HOSTINGER_SSH_PORT || '65002' }}
+          SSH_USER: ${{ secrets.HOSTINGER_SSH_USER }}
+          SSH_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
+          APP_DIR: ${{ secrets.HOSTINGER_APP_DIR || '~/domains/cebraher.com/public_html' }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts
+
+          rsync -avz -e "ssh -i ~/.ssh/id_deploy -p $SSH_PORT" ./deploy-bundle/ "$SSH_USER@$SSH_HOST:$APP_DIR/"
+
+          ssh -i ~/.ssh/id_deploy -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "cd $APP_DIR && npm install --omit=dev && mkdir -p tmp && touch tmp/restart.txt"
