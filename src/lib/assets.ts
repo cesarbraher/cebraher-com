@@ -4,6 +4,7 @@ import blogDigitalArt from '../assets/images/blog_digital_art_1794679064329.jpg'
 import blogSocialImpact from '../assets/images/blog_social_impact_1794679064779.jpg';
 
 export const HERO_STUDIO_IMAGE = '/assets/aistudio/unnamed_9a4f6080.jpg';
+export const HERO_PROFILE_IMAGE = '/me.png';
 export const SITE_ICON = '/firma.png';
 
 export const COVER_PRESETS: { key: string; label: string; src: string }[] = [

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AdminDashboard } from './components/AdminDashboard';
 import { BlogSection } from './components/BlogSection';
+import { CancelDonationPage, ThankYouDonationPage } from './components/DonationResultPages';
 import { HeroSection } from './components/HeroSection';
 import { ManifestoContactSection } from './components/ManifestoContactSection';
 import { Navbar } from './components/Navbar';
@@ -15,8 +16,18 @@ import {
 } from './lib/blogger';
 import type { BlogPost, BloggerConfig, Category, Project, SystemStatus } from './lib/types';
 
+type AppViewMode = 'landing' | 'admin' | 'cancelar-donacion' | 'gracias-por-donar';
+
+function resolveModeFromLocation(): AppViewMode {
+  if (typeof window === 'undefined') return 'landing';
+  const cleanPath = window.location.pathname.replace(/\/+$/, '').toLowerCase();
+  if (cleanPath === '/cancelar-donacion') return 'cancelar-donacion';
+  if (cleanPath === '/gracias-por-donar') return 'gracias-por-donar';
+  return 'landing';
+}
+
 export default function App() {
-  const [mode, setMode] = useState<'landing' | 'admin'>('landing');
+  const [mode, setMode] = useState<AppViewMode>(() => resolveModeFromLocation());
   const [serverPosts, setServerPosts] = useState<BlogPost[]>([]);
   const [liveBloggerPosts, setLiveBloggerPosts] = useState<BlogPost[]>([]);
   const [baseCategories, setBaseCategories] = useState<Category[]>([]);
@@ -27,6 +38,14 @@ export default function App() {
   const [syncingBlogger, setSyncingBlogger] = useState(false);
   const [readingPost, setReadingPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const onPopState = () => {
+      setMode(resolveModeFromLocation());
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
 
   const syncWithBloggerClient = useCallback(async (cfg: BloggerConfig) => {
     setSyncingBlogger(true);
@@ -149,11 +168,29 @@ export default function App() {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const navigateToSection = (sectionId?: string) => {
+    const nextUrl = sectionId ? `/#${sectionId}` : '/';
+    if (window.location.pathname !== '/' || window.location.hash !== (sectionId ? `#${sectionId}` : '')) {
+      window.history.pushState({}, '', nextUrl);
+    }
+    setMode('landing');
+    if (sectionId) {
+      setTimeout(() => {
+        document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' });
+      }, 60);
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#090A0F] text-zinc-100">
       <Navbar
         mode={mode}
         onSwitchMode={(next) => {
+          if (next === 'landing' && window.location.pathname !== '/') {
+            window.history.pushState({}, '', '/');
+          }
           setMode(next);
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
@@ -164,6 +201,26 @@ export default function App() {
           <div className="h-12 w-2/3 rounded-xl bg-zinc-900 animate-pulse" />
           <div className="h-64 w-full rounded-2xl bg-zinc-900 animate-pulse" />
         </div>
+      ) : mode === 'cancelar-donacion' ? (
+        <>
+          <CancelDonationPage
+            projects={projects}
+            onGoToProjects={() => navigateToSection('proyectos')}
+            onGoToBlog={() => navigateToSection('blog')}
+            onGoHome={() => navigateToSection()}
+          />
+          <ManifestoContactSection onMessageSent={loadAllData} />
+        </>
+      ) : mode === 'gracias-por-donar' ? (
+        <>
+          <ThankYouDonationPage
+            projects={projects}
+            onGoToProjects={() => navigateToSection('proyectos')}
+            onGoToBlog={() => navigateToSection('blog')}
+            onGoHome={() => navigateToSection()}
+          />
+          <ManifestoContactSection onMessageSent={loadAllData} />
+        </>
       ) : mode === 'admin' ? (
         <AdminDashboard
           posts={posts}
@@ -176,10 +233,7 @@ export default function App() {
           onUpdateBloggerConfig={handleUpdateBloggerConfig}
           onSyncBlogger={handleManualSyncBlogger}
           onRefreshAll={loadAllData}
-          onBackToSite={() => {
-            setMode('landing');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
+          onBackToSite={() => navigateToSection()}
         />
       ) : (
         <main>

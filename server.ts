@@ -398,6 +398,9 @@ async function startServer() {
   if (process.env.NODE_ENV === 'production') {
     const distPath = path.resolve(process.cwd(), 'dist');
     app.use(express.static(distPath));
+    app.all(['/cancelar-donacion', '/cancelar-donacion/', '/gracias-por-donar', '/gracias-por-donar/'], (_req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
     app.get('*', (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });

@@ -1,6 +1,12 @@
 import { ArrowRight, ExternalLink, RefreshCw, Rss } from 'lucide-react';
-import { formatSpanishDate, HERO_STUDIO_IMAGE, resolveCoverImage } from '../lib/assets';
+import {
+  formatSpanishDate,
+  HERO_PROFILE_IMAGE,
+  HERO_STUDIO_IMAGE,
+  resolveCoverImage,
+} from '../lib/assets';
 import type { BlogPost, BloggerConfig } from '../lib/types';
+import { PayPalDonateButton } from './PayPalDonateButton';
 import { ResilientImage } from './ResilientImage';
 
 interface HeroSectionProps {
@@ -34,42 +40,56 @@ export function HeroSection({
     <section id="inicio" className="relative border-b border-zinc-800/80 bg-[#090A0F]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-12 lg:pt-16 lg:pb-16">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-stretch">
-          {/* Left Column: Typographic Hierarchy */}
+          {/* Left Column: Typographic Hierarchy + Circular Profile Photo + PayPal Donations Button */}
           <div className="lg:col-span-6 flex flex-col justify-between py-2">
             <div>
               <p className="text-xs sm:text-sm font-medium text-zinc-400 tracking-wide mb-5">
                 Cesar Augusto Bravo Hernández · Salamanca &amp; Valle de Santiago, México
               </p>
 
-              <h1 className="font-display text-[clamp(2.25rem,4vw,3.6rem)] font-bold leading-[1.08] tracking-tight text-zinc-50 mb-6">
-                Donde el código se convierte en arte y la tecnología en propósito.
-              </h1>
+              {/* Circular image (me.png) to the left of the main header title */}
+              <div className="flex items-center gap-4 sm:gap-6 mb-6">
+                <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-full overflow-hidden border-2 border-amber-500/80 shadow-xl bg-[#111219] shrink-0">
+                  <img
+                    src={HERO_PROFILE_IMAGE}
+                    alt="Cesar Braher"
+                    className="w-full h-full object-cover object-center rounded-full"
+                  />
+                </div>
+                <h1 className="font-display text-[clamp(1.85rem,3.6vw,3.25rem)] font-bold leading-[1.1] tracking-tight text-zinc-50">
+                  Creando arte y tecnología con propósito.
+                </h1>
+              </div>
 
-              <p className="text-base sm:text-lg text-zinc-300 leading-relaxed max-w-xl mb-8">
-                Desarrollador Full-Stack Web &amp; Mobile, artista digital, productor musical y fundador de{' '}
-                <span className="text-zinc-100 font-medium">CEBRA.TECH</span> y{' '}
-                <span className="text-zinc-100 font-medium">CEBRA.STORE</span>. Más de dos décadas uniendo ingeniería
-                con Node.js, MySQL en Hostinger e Inteligencia Artificial con dirección visual y música Indie Rock.
+              <p className="text-base sm:text-lg text-zinc-300 font-medium leading-relaxed max-w-xl mb-6">
+                Artista Digital | @google DevRel | Consejero en Adicciones | Músico | Web &amp; App Developer.
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-6 pt-2">
-              <button
-                type="button"
-                onClick={onExploreProjects}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-amber-500 text-zinc-950 text-sm font-semibold hover:bg-amber-400 transition-colors cursor-pointer whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
-              >
-                Explorar Proyectos
-                <ArrowRight className="w-4 h-4" aria-hidden="true" />
-              </button>
+            <div className="space-y-4 pt-2">
+              {/* PayPal DONACIONES button placed directly above "Explorar Proyectos" */}
+              <div>
+                <PayPalDonateButton />
+              </div>
 
-              <button
-                type="button"
-                onClick={onReadBlog}
-                className="text-sm font-medium text-zinc-300 hover:text-amber-400 transition-colors underline underline-offset-4 decoration-zinc-700 hover:decoration-amber-400 cursor-pointer whitespace-nowrap shrink-0"
-              >
-                Leer últimas entradas de Blogger
-              </button>
+              <div className="flex flex-wrap items-center gap-6">
+                <button
+                  type="button"
+                  onClick={onExploreProjects}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-amber-500 text-zinc-950 text-sm font-semibold hover:bg-amber-400 transition-colors cursor-pointer whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+                >
+                  Explorar Proyectos
+                  <ArrowRight className="w-4 h-4" aria-hidden="true" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={onReadBlog}
+                  className="text-sm font-medium text-zinc-300 hover:text-amber-400 transition-colors underline underline-offset-4 decoration-zinc-700 hover:decoration-amber-400 cursor-pointer whitespace-nowrap shrink-0"
+                >
+                  Leer últimas entradas de Blogger
+                </button>
+              </div>
             </div>
           </div>
 
