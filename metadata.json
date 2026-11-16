@@ -1,6 +1,6 @@
 {
-  "name": "César Braher — Arquitectura Digital, Arte & Blog",
-  "description": "Portafolio creativo, panel de seguimiento de proyectos y sistema de blog administrable con Node.js y base de datos MySQL de Hostinger de César Augusto Bravo Hernández (César Braher / CEBRA).",
+  "name": "CESAR BRAHER - Web Personal y Blog",
+  "description": "Portafolio creativo, panel de seguimiento de proyectos y sistema de blog administrable con Node.js y base de datos MySQL de Hostinger de Cesar Augusto Bravo Hernández (Cesar Braher / CEBRA).",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

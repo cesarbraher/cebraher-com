@@ -38,7 +38,7 @@ export function HeroSection({
           <div className="lg:col-span-6 flex flex-col justify-between py-2">
             <div>
               <p className="text-xs sm:text-sm font-medium text-zinc-400 tracking-wide mb-5">
-                César Augusto Bravo Hernández · Salamanca &amp; Valle de Santiago, México
+                Cesar Augusto Bravo Hernández · Salamanca &amp; Valle de Santiago, México
               </p>
 
               <h1 className="font-display text-[clamp(2.25rem,4vw,3.6rem)] font-bold leading-[1.08] tracking-tight text-zinc-50 mb-6">
@@ -78,15 +78,15 @@ export function HeroSection({
             <div className="relative h-full min-h-[320px] lg:min-h-[450px] rounded-2xl overflow-hidden border border-zinc-800/80 bg-[#111219]">
               <ResilientImage
                 src={HERO_STUDIO_IMAGE}
-                alt="César Braher tocando guitarra acústica en su estudio de producción musical y desarrollo digital"
+                alt="Cesar Braher tocando guitarra acústica en su estudio de producción musical y desarrollo digital"
                 className="w-full h-full object-cover object-center"
-                fallbackTitle="Estudio César Braher — Música y Código"
+                fallbackTitle="Estudio Cesar Braher — Música y Código"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#090A0F]/85 via-[#090A0F]/15 to-transparent pointer-events-none" />
               <div className="absolute bottom-0 inset-x-0 p-5 sm:p-6 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
                 <div>
                   <p className="text-xs text-zinc-300 font-medium">
-                    César Braher · En el estudio
+                    Cesar Braher · En el estudio
                   </p>
                   <p className="text-sm text-zinc-100 font-semibold">
                     Producción sonora, arquitectura Full-Stack y dirección creativa

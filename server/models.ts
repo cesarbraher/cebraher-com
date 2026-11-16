@@ -133,7 +133,7 @@ const BlogPostSchema = new Schema<BlogPostDoc>(
     readTimeMinutes: { type: Number, default: 5 },
     published: { type: Boolean, default: true },
     featured: { type: Boolean, default: false },
-    author: { type: String, default: 'César Augusto Bravo Hernández' },
+    author: { type: String, default: 'Cesar Augusto Bravo Hernández' },
   },
   { timestamps: true }
 );

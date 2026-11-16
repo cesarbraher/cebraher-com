@@ -411,7 +411,7 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Servidor César Braher escuchando en http://0.0.0.0:${PORT}`);
+    console.log(`Servidor Cesar Braher escuchando en http://0.0.0.0:${PORT}`);
   });
 }
 

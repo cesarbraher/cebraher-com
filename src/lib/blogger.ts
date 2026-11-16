@@ -170,7 +170,7 @@ export function parseBloggerFeedData(data: any): BlogPost[] {
     const authorName =
       entry?.author?.[0]?.name?.$t && entry.author[0].name.$t !== 'Unknown'
         ? String(entry.author[0].name.$t)
-        : 'César Augusto Bravo Hernández';
+        : 'Cesar Augusto Bravo Hernández';
 
     const createdAt = entry?.published?.$t
       ? new Date(entry.published.$t).toISOString()
@@ -310,7 +310,7 @@ export async function fetchLiveBloggerPostsBrowser(
                 readTimeMinutes: Math.max(2, Math.ceil(wordCount / 180)),
                 published: true,
                 featured: idx === 0,
-                author: item.author?.displayName || 'César Augusto Bravo Hernández',
+                author: item.author?.displayName || 'Cesar Augusto Bravo Hernández',
                 createdAt: item.published ? new Date(item.published).toISOString() : new Date().toISOString(),
                 updatedAt: item.updated ? new Date(item.updated).toISOString() : new Date().toISOString(),
                 source: 'blogger',

@@ -187,7 +187,7 @@ export function parseBloggerFeedJson(data: any, indexOffset = 0): IBlogPost[] {
     const authorName =
       entry?.author?.[0]?.name?.$t && entry.author[0].name.$t !== 'Unknown'
         ? String(entry.author[0].name.$t)
-        : 'César Augusto Bravo Hernández';
+        : 'Cesar Augusto Bravo Hernández';
 
     const createdAt = entry?.published?.$t
       ? new Date(entry.published.$t).toISOString()
@@ -263,7 +263,7 @@ function parseBloggerApiV3Items(items: any[]): IBlogPost[] {
       readTimeMinutes,
       published: true,
       featured: idx === 0,
-      author: item.author?.displayName || 'César Augusto Bravo Hernández',
+      author: item.author?.displayName || 'Cesar Augusto Bravo Hernández',
       createdAt,
       updatedAt,
       source: 'blogger',

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { ArrowUpRight, CheckCircle2, Mail, MessageCircle, Send } from 'lucide-react';
+import { SITE_ICON } from '../lib/assets';
 
 interface ManifestoContactSectionProps {
   onMessageSent?: () => void;
@@ -15,7 +16,7 @@ const ECOSYSTEM_LINKS = [
   { label: 'X · @cebraher', desc: 'Ideas & Comunidad Tech', url: 'https://x.com/cebraher' },
   { label: 'GitHub · @cebraher', desc: 'Código Abierto Apache 2.0', url: 'https://github.com/cebraher' },
   { label: 'Facebook · @cebraher', desc: 'Página Oficial & Novedades', url: 'https://www.facebook.com/cebraher' },
-  { label: 'Spotify · César Bravo', desc: 'Catálogo Musical Oficial', url: 'https://open.spotify.com/intl-es/artist/66p3p4W65G4huFUZITROUW' },
+  { label: 'Spotify · Cesar Bravo', desc: 'Catálogo Musical Oficial', url: 'https://open.spotify.com/intl-es/artist/66p3p4W65G4huFUZITROUW' },
 ];
 
 export function ManifestoContactSection({ onMessageSent }: ManifestoContactSectionProps) {
@@ -86,7 +87,7 @@ export function ManifestoContactSection({ onMessageSent }: ManifestoContactSecti
                 <blockquote className="py-4 px-5 rounded-xl bg-[#11131C] border border-zinc-800/80 text-sm sm:text-base text-zinc-200 italic">
                   “Toda gran obra comienza siendo invisible. Mi labor consiste en darle forma.”
                   <footer className="not-italic text-xs text-zinc-400 mt-2">
-                    César Augusto Bravo Hernández (César Braher) · Fundador de CEBRA
+                    Cesar Augusto Bravo Hernández (Cesar Braher) · Fundador de CEBRA
                   </footer>
                 </blockquote>
               </div>
@@ -104,11 +105,20 @@ export function ManifestoContactSection({ onMessageSent }: ManifestoContactSecti
                       rel="noopener noreferrer"
                       className="group flex items-center justify-between p-3.5 rounded-xl bg-[#11131C] border border-zinc-800/80 hover:border-amber-500/50 transition-colors"
                     >
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-zinc-100 group-hover:text-amber-400 transition-colors truncate">
-                          {item.label}
-                        </p>
-                        <p className="text-xs text-zinc-400 truncate">{item.desc}</p>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="w-8 h-8 rounded-lg bg-[#090A0F] border border-zinc-800 flex items-center justify-center shrink-0 overflow-hidden">
+                          <img
+                            src={SITE_ICON}
+                            alt="Cesar Braher"
+                            className="w-5 h-5 object-contain"
+                          />
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-zinc-100 group-hover:text-amber-400 transition-colors truncate">
+                            {item.label}
+                          </p>
+                          <p className="text-xs text-zinc-400 truncate">{item.desc}</p>
+                        </div>
                       </div>
                       <ArrowUpRight className="w-4 h-4 text-zinc-500 group-hover:text-amber-400 shrink-0 ml-2" aria-hidden="true" />
                     </a>
@@ -238,9 +248,16 @@ export function ManifestoContactSection({ onMessageSent }: ManifestoContactSecti
       {/* Quiet Footer */}
       <footer className="border-t border-zinc-800/80 bg-[#07080C] py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500">
-          <p>
-            © {new Date().getFullYear()} César Augusto Bravo Hernández (César Braher) · CEBRA Arte Digital &amp; Tecnología.
-          </p>
+          <div className="flex items-center gap-2.5">
+            <img
+              src={SITE_ICON}
+              alt="Cesar Braher"
+              className="w-6 h-6 rounded-md object-contain"
+            />
+            <p>
+              © {new Date().getFullYear()} Cesar Augusto Bravo Hernández (Cesar Braher) · CEBRA Arte Digital &amp; Tecnología.
+            </p>
+          </div>
           <p>
             Valle de Santiago &amp; Salamanca, Guanajuato, México · Código bajo licencia Apache 2.0
           </p>
@@ -249,10 +266,10 @@ export function ManifestoContactSection({ onMessageSent }: ManifestoContactSecti
 
       {/* Clean WhatsApp Floating Button (from user's CODIGO_FUENTE attachment, sized within sticky cap) */}
       <a
-        href="https://wa.me/524641093886?text=Hola%20C%C3%A9sar%2C%20vengo%20de%20tu%20p%C3%A1gina%20web%20y%20me%20gustar%C3%ADa%20platicar%20contigo%20sobre%20un%20proyecto."
+        href="https://wa.me/524641093886?text=Hola%20Cesar%2C%20vengo%20de%20tu%20p%C3%A1gina%20web%20y%20me%20gustar%C3%ADa%20platicar%20contigo%20sobre%20un%20proyecto."
         target="_blank"
         rel="noopener noreferrer"
-        aria-label="Contactar a César Braher por WhatsApp"
+        aria-label="Contactar a Cesar Braher por WhatsApp"
         title="¿Hablamos de tu proyecto por WhatsApp?"
         className="fixed bottom-5 right-5 z-40 w-12 h-12 sm:w-13 sm:h-13 rounded-full bg-emerald-500 hover:bg-emerald-400 text-zinc-950 flex items-center justify-center shadow-lg transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
       >

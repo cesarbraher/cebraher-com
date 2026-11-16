@@ -124,7 +124,7 @@ async function initMysqlTablesAndSeed(pool: Pool): Promise<void> {
       read_time_minutes INT NOT NULL DEFAULT 5,
       published TINYINT(1) NOT NULL DEFAULT 1,
       featured TINYINT(1) NOT NULL DEFAULT 0,
-      author VARCHAR(180) NOT NULL DEFAULT 'César Augusto Bravo Hernández',
+      author VARCHAR(180) NOT NULL DEFAULT 'Cesar Augusto Bravo Hernández',
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -385,7 +385,7 @@ function mapMysqlPost(row: RowDataPacket): IBlogPost {
     readTimeMinutes: Number(row.read_time_minutes || 5),
     published: Boolean(row.published),
     featured: Boolean(row.featured),
-    author: String(row.author || 'César Augusto Bravo Hernández'),
+    author: String(row.author || 'Cesar Augusto Bravo Hernández'),
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString(),
   };
@@ -446,7 +446,7 @@ function mapPostDoc(doc: any): IBlogPost {
     readTimeMinutes: Number(doc.readTimeMinutes || 5),
     published: Boolean(doc.published),
     featured: Boolean(doc.featured),
-    author: doc.author || 'César Augusto Bravo Hernández',
+    author: doc.author || 'Cesar Augusto Bravo Hernández',
     createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
     updatedAt: doc.updatedAt ? new Date(doc.updatedAt).toISOString() : new Date().toISOString(),
   };
@@ -623,7 +623,7 @@ export async function createPost(input: {
     const now = new Date().toISOString();
     const published = input.published ?? true;
     const featured = Boolean(input.featured);
-    const author = input.author?.trim() || 'César Augusto Bravo Hernández';
+    const author = input.author?.trim() || 'Cesar Augusto Bravo Hernández';
     const coverImage = input.coverImage || 'ai-architecture';
     await mysqlPool.query(
       `INSERT INTO blog_posts (
@@ -682,7 +682,7 @@ export async function createPost(input: {
       readTimeMinutes: computedReadTime,
       published: input.published ?? true,
       featured: Boolean(input.featured),
-      author: input.author?.trim() || 'César Augusto Bravo Hernández',
+      author: input.author?.trim() || 'Cesar Augusto Bravo Hernández',
     });
     return mapPostDoc(created);
   }
@@ -707,7 +707,7 @@ export async function createPost(input: {
     readTimeMinutes: computedReadTime,
     published: input.published ?? true,
     featured: Boolean(input.featured),
-    author: input.author?.trim() || 'César Augusto Bravo Hernández',
+    author: input.author?.trim() || 'Cesar Augusto Bravo Hernández',
     createdAt: now,
     updatedAt: now,
   };

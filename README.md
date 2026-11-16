@@ -1,6 +1,6 @@
-# César Braher — Arquitectura Digital, Arte & Blog (Node.js + Hostinger MySQL)
+# Cesar Braher — Arquitectura Digital, Arte & Blog (Node.js + Hostinger MySQL)
 
-Plataforma web personal, portafolio de proyectos, panel de seguimiento operativo y sistema de blog administrable construido por **César Augusto Bravo Hernández (César Braher / CEBRA)**.
+Plataforma web personal, portafolio de proyectos, panel de seguimiento operativo y sistema de blog administrable construido por **Cesar Augusto Bravo Hernández (Cesar Braher / CEBRA)**.
 
 ## Características principales
 
@@ -40,4 +40,4 @@ npm run dev
 
 ## Licencia
 
-Apache License 2.0 — César Augusto Bravo Hernández (`@cebraher`).
+Apache License 2.0 — Cesar Augusto Bravo Hernández (`@cebraher`).
