@@ -59,8 +59,11 @@ export function AdminDashboard({
   onBackToSite,
 }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<AdminTab>('posts');
-  const [adminKey, setAdminKey] = useState<string>(() => localStorage.getItem('cebra_admin_key') || '');
-  const [unlocked, setUnlocked] = useState<boolean>(!status?.requireAuth);
+  const [adminUser, setAdminUser] = useState<string>(() => sessionStorage.getItem('cebra_admin_user') || '');
+  const [adminKey, setAdminKey] = useState<string>(() => sessionStorage.getItem('cebra_admin_key') || '');
+  const [unlocked, setUnlocked] = useState<boolean>(
+    () => sessionStorage.getItem('cebra_admin_unlocked') === 'true'
+  );
   const [authError, setAuthError] = useState('');
   const [feedback, setFeedback] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -106,6 +109,7 @@ export function AdminDashboard({
 
   const authHeaders = (): Record<string, string> => {
     const h: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (adminUser) h['x-admin-user'] = adminUser.trim();
     if (adminKey) h['x-admin-key'] = adminKey;
     return h;
   };
@@ -130,12 +134,6 @@ export function AdminDashboard({
   };
 
   useEffect(() => {
-    if (!status?.requireAuth) {
-      setUnlocked(true);
-    }
-  }, [status?.requireAuth]);
-
-  useEffect(() => {
     if (unlocked && activeTab === 'messages') {
       loadMessages();
     }
@@ -144,17 +142,46 @@ export function AdminDashboard({
   const handleUnlock = async (e: FormEvent) => {
     e.preventDefault();
     setAuthError('');
-    const res = await fetch('/api/admin/verify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: adminKey }),
-    });
-    if (res.ok) {
-      localStorage.setItem('cebra_admin_key', adminKey);
+    const normalizedUser = adminUser.trim();
+    const isLocalMatch =
+      normalizedUser.toUpperCase() === 'CESARBRAHER' && adminKey === 'Juan14:16';
+
+    let isServerMatch = false;
+    try {
+      const res = await fetch('/api/admin/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user: normalizedUser, password: adminKey, key: adminKey }),
+      });
+      if (res.ok) {
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const data = await res.json();
+          isServerMatch = Boolean(data?.valid);
+        }
+      }
+    } catch {
+      // Fallback to local credential verification on static/hybrid hosting
+    }
+
+    if (isLocalMatch || isServerMatch) {
+      sessionStorage.setItem('cebra_admin_user', normalizedUser);
+      sessionStorage.setItem('cebra_admin_key', adminKey);
+      sessionStorage.setItem('cebra_admin_unlocked', 'true');
       setUnlocked(true);
     } else {
-      setAuthError('Clave de acceso incorrecta.');
+      setAuthError('Usuario o contraseña incorrectos.');
     }
+  };
+
+  const handleLockSession = () => {
+    sessionStorage.removeItem('cebra_admin_unlocked');
+    sessionStorage.removeItem('cebra_admin_user');
+    sessionStorage.removeItem('cebra_admin_key');
+    setAdminUser('');
+    setAdminKey('');
+    setUnlocked(false);
+    onBackToSite();
   };
 
   const resetPostForm = () => {
@@ -386,22 +413,42 @@ export function AdminDashboard({
         >
           <div className="flex items-center gap-3">
             <Lock className="w-5 h-5 text-amber-400" aria-hidden="true" />
-            <h1 className="font-display text-xl font-bold text-zinc-50">Acceso Administrador</h1>
+            <h1 className="font-display text-xl font-bold text-zinc-50">Acceso Administrar Blog</h1>
           </div>
           <p className="text-sm text-zinc-400">
-            Ingresa tu clave configurada en <code className="text-zinc-200">ADMIN_ACCESS_KEY</code> para gestionar el
-            blog y MongoDB.
+            Ingresa tu usuario y contraseña de administrador para gestionar el blog, proyectos y configuración de Blogger.
           </p>
-          <input
-            type="password"
-            value={adminKey}
-            onChange={(e) => setAdminKey(e.target.value)}
-            placeholder="Clave de acceso"
-            className="w-full px-3.5 py-2.5 text-sm rounded-lg bg-[#090A0F] border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-500"
-            required
-          />
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-zinc-300 mb-1.5">Usuario</label>
+              <input
+                type="text"
+                value={adminUser}
+                onChange={(e) => setAdminUser(e.target.value)}
+                placeholder="Usuario"
+                autoComplete="username"
+                className="w-full px-3.5 py-2.5 text-sm rounded-lg bg-[#090A0F] border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-500"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-zinc-300 mb-1.5">Contraseña</label>
+              <input
+                type="password"
+                value={adminKey}
+                onChange={(e) => setAdminKey(e.target.value)}
+                placeholder="Contraseña de acceso"
+                autoComplete="current-password"
+                className="w-full px-3.5 py-2.5 text-sm rounded-lg bg-[#090A0F] border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-500"
+                required
+              />
+            </div>
+          </div>
+
           {authError && <p className="text-xs text-rose-400">{authError}</p>}
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-3 pt-1">
             <button
               type="button"
               onClick={onBackToSite}
@@ -413,7 +460,7 @@ export function AdminDashboard({
               type="submit"
               className="px-5 py-2 text-xs font-semibold rounded-lg bg-amber-500 text-zinc-950 hover:bg-amber-400 cursor-pointer"
             >
-              Desbloquear panel
+              Ingresar al panel
             </button>
           </div>
         </form>
@@ -509,14 +556,24 @@ export function AdminDashboard({
           </nav>
         </div>
 
-        <button
-          type="button"
-          onClick={onBackToSite}
-          className="hidden lg:inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-zinc-700 text-xs font-medium text-zinc-300 hover:text-zinc-100 hover:border-zinc-500 cursor-pointer"
-        >
-          <Eye className="w-3.5 h-3.5" aria-hidden="true" />
-          Ver Landing Pública
-        </button>
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={onBackToSite}
+            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-zinc-700 text-xs font-medium text-zinc-300 hover:text-zinc-100 hover:border-zinc-500 cursor-pointer"
+          >
+            <Eye className="w-3.5 h-3.5" aria-hidden="true" />
+            Ver Landing Pública
+          </button>
+          <button
+            type="button"
+            onClick={handleLockSession}
+            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-zinc-800 text-xs font-medium text-zinc-400 hover:text-rose-400 hover:border-rose-500/40 cursor-pointer"
+          >
+            <Lock className="w-3.5 h-3.5" aria-hidden="true" />
+            Cerrar sesión
+          </button>
+        </div>
       </aside>
 
       {/* Main Content Area */}

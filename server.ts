@@ -69,16 +69,27 @@ async function startServer() {
 
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
-  const requireAuth = process.env.REQUIRE_ADMIN_AUTH === 'true';
-  const adminKey = process.env.ADMIN_ACCESS_KEY || 'cebra2026';
+  const requireAuth = process.env.REQUIRE_ADMIN_AUTH !== 'false';
+  const adminUser = process.env.ADMIN_USER || 'CESARBRAHER';
+  const adminKey = process.env.ADMIN_ACCESS_KEY || 'Juan14:16';
 
   app.use(express.json({ limit: '4mb' }));
 
+  const isValidAdminCredentials = (userHeader?: string, keyHeader?: string) => {
+    const u = (userHeader || '').trim();
+    const k = keyHeader || '';
+    if (u && k) {
+      return u.toUpperCase() === adminUser.toUpperCase() && k === adminKey;
+    }
+    return k === adminKey;
+  };
+
   const checkAdmin = (req: Request, res: Response, next: NextFunction) => {
     if (!requireAuth) return next();
-    const provided = req.headers['x-admin-key'];
-    if (provided === adminKey) return next();
-    return res.status(401).json({ error: 'Clave de administrador inválida o ausente.' });
+    const providedUser = typeof req.headers['x-admin-user'] === 'string' ? req.headers['x-admin-user'] : undefined;
+    const providedKey = typeof req.headers['x-admin-key'] === 'string' ? req.headers['x-admin-key'] : undefined;
+    if (isValidAdminCredentials(providedUser, providedKey)) return next();
+    return res.status(401).json({ error: 'Usuario o contraseña de administrador inválidos.' });
   };
 
   // --- Health & Status ---
@@ -171,9 +182,12 @@ async function startServer() {
 
   app.post('/api/admin/verify', (req, res) => {
     if (!requireAuth) return res.json({ valid: true });
-    const { key } = req.body ?? {};
-    if (key === adminKey) return res.json({ valid: true });
-    return res.status(401).json({ valid: false, error: 'Clave incorrecta.' });
+    const { user, key, password } = req.body ?? {};
+    const pass = password ?? key;
+    if (isValidAdminCredentials(user, pass)) {
+      return res.json({ valid: true });
+    }
+    return res.status(401).json({ valid: false, error: 'Usuario o contraseña incorrectos.' });
   });
 
   // --- Categories ---
