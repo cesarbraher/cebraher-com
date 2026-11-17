@@ -93,29 +93,15 @@ export function HeroSection({
             </div>
           </div>
 
-          {/* Right Column: Uploaded Studio Cover Photograph */}
-          <div className="lg:col-span-6">
-            <div className="relative h-full min-h-[320px] lg:min-h-[450px] rounded-2xl overflow-hidden border border-zinc-800/80 bg-[#111219]">
+          {/* Right Column: Studio Cover Photograph (cesarbraher.png) without any overlaid text */}
+          <div className="lg:col-span-6 flex items-center">
+            <div className="relative w-full h-full min-h-[280px] sm:min-h-[340px] lg:min-h-[420px] rounded-2xl overflow-hidden border border-zinc-800/80 bg-[#111219]">
               <ResilientImage
                 src={HERO_STUDIO_IMAGE}
-                alt="Cesar Braher tocando guitarra acústica en su estudio de producción musical y desarrollo digital"
+                alt="Cesar Braher en su estudio"
                 className="w-full h-full object-cover object-center"
-                fallbackTitle="Estudio Cesar Braher — Música y Código"
+                fallbackTitle="Cesar Braher"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#090A0F]/85 via-[#090A0F]/15 to-transparent pointer-events-none" />
-              <div className="absolute bottom-0 inset-x-0 p-5 sm:p-6 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
-                <div>
-                  <p className="text-xs text-zinc-300 font-medium">
-                    Cesar Braher · En el estudio
-                  </p>
-                  <p className="text-sm text-zinc-100 font-semibold">
-                    Producción sonora, arquitectura Full-Stack y dirección creativa
-                  </p>
-                </div>
-                <span className="font-mono text-xs text-amber-400 tabular-nums whitespace-nowrap">
-                  CEBRA · 1986–2026
-                </span>
-              </div>
             </div>
           </div>
         </div>
